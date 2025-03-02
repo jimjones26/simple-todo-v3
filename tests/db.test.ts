@@ -107,3 +107,60 @@ describe('Task Model CRUD Operations', () => {
     expect(task).toBeNull();
   });
 });
+
+describe('Session Model CRUD Operations', () => {
+  let testUser;
+  let testSessionId = 'session1';
+
+  beforeAll(async () => {
+    testUser = await prisma.user.create({
+      data: {
+        email: 'sessionuser@example.com',
+        username: 'sessionuser',
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.session.deleteMany({});
+    await prisma.user.deleteMany({});
+    await prisma.$disconnect();
+  });
+
+  it('should create a session', async () => {
+    const session = await prisma.session.create({
+      data: {
+        id: testSessionId,
+        userId: testUser.id,
+        expiresAt: new Date(Date.now() + 3600 * 1000), // 1 hour from now
+      },
+    });
+    expect(session.id).toBe(testSessionId);
+  });
+
+  it('should read a session by id', async () => {
+    const session = await prisma.session.findUnique({
+      where: { id: testSessionId },
+    });
+    expect(session.userId).toBe(testUser.id);
+  });
+
+  it('should update a session\'s expiresAt', async () => {
+    const newExpiresAt = new Date(Date.now() + 7200 * 1000); // 2 hours from now
+    const updatedSession = await prisma.session.update({
+      where: { id: testSessionId },
+      data: { expiresAt: newExpiresAt },
+    });
+    expect(updatedSession.expiresAt).toEqual(newExpiresAt);
+  });
+
+  it('should delete a session', async () => {
+    await prisma.session.delete({
+      where: { id: testSessionId },
+    });
+    const session = await prisma.session.findUnique({
+      where: { id: testSessionId },
+    });
+    expect(session).toBeNull();
+  });
+});
